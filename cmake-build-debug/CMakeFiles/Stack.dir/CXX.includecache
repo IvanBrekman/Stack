@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/ivanbrekman/CLionProjects/Stack/main.cpp
+stdio.h
+-
+stack.h
+/home/ivanbrekman/CLionProjects/Stack/stack.h
+
+/home/ivanbrekman/CLionProjects/Stack/stack.cpp
+assert.h
+-
+malloc.h
+-
+stack.h
+/home/ivanbrekman/CLionProjects/Stack/stack.h
+
+/home/ivanbrekman/CLionProjects/Stack/stack.h
+
