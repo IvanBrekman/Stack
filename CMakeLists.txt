@@ -3,4 +3,4 @@ project(Stack)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(Stack main.cpp stack.cpp stack.h errorlib.h)
+add_executable(Stack main.cpp stack.cpp stack.h errorlib.h errorlib.cpp)

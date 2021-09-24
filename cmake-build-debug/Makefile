@@ -129,6 +129,30 @@ Stack/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Stack.dir/build.make CMakeFiles/Stack.dir/build
 .PHONY : Stack/fast
 
+errorlib.o: errorlib.cpp.o
+.PHONY : errorlib.o
+
+# target to build an object file
+errorlib.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Stack.dir/build.make CMakeFiles/Stack.dir/errorlib.cpp.o
+.PHONY : errorlib.cpp.o
+
+errorlib.i: errorlib.cpp.i
+.PHONY : errorlib.i
+
+# target to preprocess a source file
+errorlib.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Stack.dir/build.make CMakeFiles/Stack.dir/errorlib.cpp.i
+.PHONY : errorlib.cpp.i
+
+errorlib.s: errorlib.cpp.s
+.PHONY : errorlib.s
+
+# target to generate assembly for a file
+errorlib.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Stack.dir/build.make CMakeFiles/Stack.dir/errorlib.cpp.s
+.PHONY : errorlib.cpp.s
+
 main.o: main.cpp.o
 .PHONY : main.o
 
@@ -186,6 +210,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... Stack"
+	@echo "... errorlib.o"
+	@echo "... errorlib.i"
+	@echo "... errorlib.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"

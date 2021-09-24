@@ -8,6 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
+  "/home/ivanbrekman/CLionProjects/Stack/errorlib.cpp" "/home/ivanbrekman/CLionProjects/Stack/cmake-build-debug/CMakeFiles/Stack.dir/errorlib.cpp.o"
   "/home/ivanbrekman/CLionProjects/Stack/main.cpp" "/home/ivanbrekman/CLionProjects/Stack/cmake-build-debug/CMakeFiles/Stack.dir/main.cpp.o"
   "/home/ivanbrekman/CLionProjects/Stack/stack.cpp" "/home/ivanbrekman/CLionProjects/Stack/cmake-build-debug/CMakeFiles/Stack.dir/stack.cpp.o"
   )

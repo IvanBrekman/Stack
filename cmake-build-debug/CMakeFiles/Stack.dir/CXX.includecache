@@ -6,11 +6,11 @@
 
 #IncludeRegexTransform: 
 
-/home/ivanbrekman/CLionProjects/Stack/main.cpp
-stdio.h
+/home/ivanbrekman/CLionProjects/Stack/errorlib.h
+string.h
 -
-stack.h
-/home/ivanbrekman/CLionProjects/Stack/stack.h
+malloc.h
+-
 
 /home/ivanbrekman/CLionProjects/Stack/stack.cpp
 assert.h
@@ -19,6 +19,8 @@ malloc.h
 -
 stack.h
 /home/ivanbrekman/CLionProjects/Stack/stack.h
+errorlib.h
+/home/ivanbrekman/CLionProjects/Stack/errorlib.h
 
 /home/ivanbrekman/CLionProjects/Stack/stack.h
 

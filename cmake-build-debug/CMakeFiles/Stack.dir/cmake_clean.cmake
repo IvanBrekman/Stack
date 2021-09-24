@@ -1,4 +1,5 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/Stack.dir/errorlib.cpp.o"
   "CMakeFiles/Stack.dir/main.cpp.o"
   "CMakeFiles/Stack.dir/stack.cpp.o"
   "Stack"
