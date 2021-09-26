@@ -7,9 +7,7 @@
 #IncludeRegexTransform: 
 
 /home/ivanbrekman/CLionProjects/Stack/errorlib.h
-string.h
--
-malloc.h
+time.h
 -
 
 /home/ivanbrekman/CLionProjects/Stack/stack.cpp
@@ -23,4 +21,6 @@ errorlib.h
 /home/ivanbrekman/CLionProjects/Stack/errorlib.h
 
 /home/ivanbrekman/CLionProjects/Stack/stack.h
+errorlib.h
+/home/ivanbrekman/CLionProjects/Stack/errorlib.h
 

@@ -5,61 +5,69 @@
 #ifndef STACK_STACK_H
 #define STACK_STACK_H
 
-#define TYPE "int" //!TODO разбить на 2 define?
+#define CANARY 0xDEADA2EA // DEAD AREA
+#define CAP_STEP    128
+#define CAP_BORDER 4096
+#define TYPE "int"
 typedef int stack_el_t;
 
-#define VALID_PTR(ptr, type) ((ptr) != NULL && (ptr) != (type*)poisons::UNINITIALIZED_PTR && (ptr) != (type*)poisons::FREED_PTR)
-#define LOCATION(var) { TYPE, #var, __FILE__, __FUNCTION__, __LINE__ }
-#define BOMB 0xDEADA2EA // DEAD AREA
+#if !defined(VALIDATE_LEVEL)
+    #define VALIDATE_LEVEL 1
+#endif
 
-//!TODO Избавиться от инициализации cur_info
-#define ASSERT_OK(obj, type, reason) {                    \
-    if (type ## _error(obj)) {                            \
-        StackInfo cur_info = LOCATION(obj);               \
-        type ## _dump_(obj, &cur_info, reason);           \
-        assert(0 && "verify failed");                     \
-    }                                                     \
-} // Нужны ли {}? Потому что тогда при вызове не нужны ;
-#define stack_ctor(st) {                                  \
-    StackInfo info = LOCATION(st);                        \
-    Stack_ctor_(&(st), &info);                            \
+#define ASSERT_OK(obj, type, reason) {                               \
+    if (VALIDATE_LEVEL >= 1 && type ## _error(obj)) {                \
+        StackInfo cur_info = LOCATION(obj);                          \
+        type ## _dump_(obj, &cur_info, reason);                      \
+        if (VALIDATE_LEVEL >= 3) {                                   \
+            type ## _dump_file_(obj, &cur_info, reason, "log.txt");  \
+        }                                                            \
+        assert(0 && "verify failed");                                \
+    }                                                                \
 }
-#define stack_dump(st, reason) {                          \
-    StackInfo info = LOCATION(st);                        \
-    Stack_dump_(&(st), &info, reason);                    \
+#define CHECK_SOFT_ERROR(obj, type, error) {                         \
+    if (VALIDATE_LEVEL < 1) {                                        \
+        int err = type ## _error(obj);                               \
+        if (err && VALID_PTR(error, int)) *(error) = err;            \
+    }                                                                \
 }
+#define stack_ctor(st) {                                             \
+    StackInfo info = LOCATION(st);                                   \
+    Stack_ctor_(&(st), &info);                                       \
+}
+#define stack_dump(st, reason) {                                     \
+    StackInfo cur_info = LOCATION(st);                               \
+    Stack_dump_(&(st), &cur_info, reason);                           \
+}
+
+#include "errorlib.h"
 
 enum errors {
-    NOT_ENOUGH_MEMORY         = -1,
+    NOT_ENOUGH_MEMORY         =  -1,
 
-    ST_NULL_PTR               = -3,
-    ST_DATA_NULL_PTR          = -4,
-    ST_EMPTY                  = -5,
-    INCORRECT_ST_SIZE         = -6,
-    INCORRECT_ST_CAPACITY     = -7,
+    ST_INVALID_PTR            =  -3,
+    ST_DATA_INVALID_PTR       =  -4,
+    ST_INFO_INVALID_PTR       =  -5,
+    ST_EMPTY                  =  -6,
+    INCORRECT_ST_SIZE         =  -7,
+    INCORRECT_ST_CAPACITY     =  -8,
+    ST_SIZE_EXCEEDED_CAPACITY =  -9,
 
-    DAMAGED_CANARY            = -8,
-    ST_SIZE_EXCEEDED_CAPACITY = -9
-};
-
-enum poisons {
-    UNINITIALIZED_PTR =  6,
-    UNINITIALIZED_INT = -666,
-
-    FREED_ELEMENTS    = -667,
-    FREED_PTR         = 12
+    DAMAGED_STACK_CANARY      = -10,
+    DAMAGED_DATA_CANARY       = -11,
+    BAD_ST_ELEMENT            = -12
 };
 
 struct Stack {
-    const long long  left_canary = BOMB;
+    const long long  left_canary = CANARY;
 
     stack_el_t* data = (stack_el_t*)poisons::UNINITIALIZED_PTR;
     int capacity     = poisons::UNINITIALIZED_INT;
     int size         = poisons::UNINITIALIZED_INT;
 
-    struct StackInfo* pr_info = (StackInfo*)poisons::UNINITIALIZED_PTR;
+    const struct StackInfo* pr_info = (StackInfo*)poisons::UNINITIALIZED_PTR;
 
-    const long long right_canary = BOMB;
+    const long long right_canary = CANARY;
 };
 
 struct StackInfo {
@@ -70,18 +78,20 @@ struct StackInfo {
     int line;
 };
 
-int  Stack_ctor_(Stack* stack, const StackInfo* info);
-void Stack_dtor_(Stack* stack);
+int  Stack_ctor_(Stack* stack, const StackInfo* info, int* error=NULL);
+void Stack_dtor_(Stack* stack, int* error=NULL);
 
-int Stack_error(const Stack* stack);
+int   Stack_error(const Stack* stack);
+char* Stack_error_desc(int error_code);
 
-int        push(Stack* stack, stack_el_t value);
-int        pop(Stack* stack);
-stack_el_t top(const Stack* stack);
+int       push(Stack* stack, stack_el_t value, int* error=NULL);
+int        pop(Stack* stack, int* error=NULL);
+stack_el_t top(const Stack* stack, int* error=NULL);
 
-int change_capacity(Stack* stack, int new_capacity);
+int change_capacity(Stack* stack, int new_capacity, int* error=NULL);
 
-void print_stack(const Stack* stack);
-void Stack_dump_(const Stack* stack, const StackInfo* current_info, char reason[]);
+void print_stack     (const Stack* stack, int* error=NULL);
+void Stack_dump_     (const Stack* stack, const StackInfo* current_info, char reason[]);
+void Stack_dump_file_(const Stack* stack, const StackInfo* current_info, char reason[], const char* log_file);
 
 #endif //STACK_STACK_H

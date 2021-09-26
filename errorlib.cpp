@@ -1,17 +1,14 @@
 //
-// Created by ivanbrekman on 22.09.2021.
+// Created by ivanbrekman on 26.09.2021.
 //
 
-#include <malloc.h>
-#include <string.h>
+#include "errorlib.h"
 
-char* colored(const char* text, const char* color) {
-    char right[] = "\033[0m";
+char* datetime(char* calendar_date) {
+    const time_t timer = time(NULL);
+    struct tm* calendar = localtime(&timer);
 
-    char* colored_str = (char*)calloc(strlen(color) + strlen(text) + strlen(right) + 1, sizeof(char));
-    strcat(colored_str, color);
-    strcat(colored_str, text);
-    strcat(colored_str, right);
+    strftime(calendar_date, 40, "%d.%m.%Y %H:%M:%S, %A", calendar);
 
-    return colored_str;
+    return calendar_date;
 }
