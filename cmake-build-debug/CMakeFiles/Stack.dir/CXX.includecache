@@ -10,10 +10,20 @@
 time.h
 -
 
+/home/ivanbrekman/CLionProjects/Stack/main.cpp
+stdio.h
+-
+stack.h
+/home/ivanbrekman/CLionProjects/Stack/stack.h
+errorlib.h
+/home/ivanbrekman/CLionProjects/Stack/errorlib.h
+
 /home/ivanbrekman/CLionProjects/Stack/stack.cpp
-assert.h
+cassert
 -
 malloc.h
+-
+cstring
 -
 stack.h
 /home/ivanbrekman/CLionProjects/Stack/stack.h

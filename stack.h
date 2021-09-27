@@ -9,10 +9,9 @@
 #define CAP_STEP    128
 #define CAP_BORDER 4096
 #define TYPE "int"
-typedef int stack_el_t;
 
 #if !defined(VALIDATE_LEVEL)
-    #define VALIDATE_LEVEL 1
+    #define VALIDATE_LEVEL 2
 #endif
 
 #define ASSERT_OK(obj, type, reason) {                               \
@@ -31,9 +30,9 @@ typedef int stack_el_t;
         if (err && VALID_PTR(error, int)) *(error) = err;            \
     }                                                                \
 }
-#define stack_ctor(st) {                                             \
+#define stack_ctor(st, size) {                                       \
     StackInfo info = LOCATION(st);                                   \
-    Stack_ctor_(&(st), &info);                                       \
+    Stack_ctor_(&(st), &info, size);                                 \
 }
 #define stack_dump(st, reason) {                                     \
     StackInfo cur_info = LOCATION(st);                               \
@@ -59,11 +58,12 @@ enum errors {
 };
 
 struct Stack {
-    const long long  left_canary = CANARY;
+    const long long left_canary = CANARY;
 
-    stack_el_t* data = (stack_el_t*)poisons::UNINITIALIZED_PTR;
-    int capacity     = poisons::UNINITIALIZED_INT;
-    int size         = poisons::UNINITIALIZED_INT;
+    void* data   = (void*)poisons::UNINITIALIZED_PTR;
+    int el_size  = poisons::UNINITIALIZED_ELEMENT;
+    int capacity = poisons::UNINITIALIZED_ELEMENT;
+    int size     = poisons::UNINITIALIZED_ELEMENT;
 
     const struct StackInfo* pr_info = (StackInfo*)poisons::UNINITIALIZED_PTR;
 
@@ -78,15 +78,15 @@ struct StackInfo {
     int line;
 };
 
-int  Stack_ctor_(Stack* stack, const StackInfo* info, int* error=NULL);
+int  Stack_ctor_(Stack* stack, const StackInfo* info, int el_size, int* error=NULL);
 void Stack_dtor_(Stack* stack, int* error=NULL);
 
 int   Stack_error(const Stack* stack);
 char* Stack_error_desc(int error_code);
 
-int       push(Stack* stack, stack_el_t value, int* error=NULL);
-int        pop(Stack* stack, int* error=NULL);
-stack_el_t top(const Stack* stack, int* error=NULL);
+int  push(Stack* stack, void* value, int* error=NULL);
+void* pop(Stack* stack, int* error=NULL);
+void* top(const Stack* stack, int* error=NULL);
 
 int change_capacity(Stack* stack, int new_capacity, int* error=NULL);
 

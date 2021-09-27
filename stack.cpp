@@ -2,13 +2,14 @@
 // Created by ivanbrekman on 20.09.2021.
 //
 
-#include <assert.h>
+#include <cassert>
 #include <malloc.h>
+#include <cstring>
 
 #include "stack.h"
 #include "errorlib.h"
 
-int  Stack_ctor_(Stack* stack, const StackInfo* info, int* error) {
+int  Stack_ctor_(Stack* stack, const StackInfo* info, int el_size, int* error) {
     if (VALIDATE_LEVEL >= 1) {
         assert(VALID_PTR(stack, Stack));
         assert(VALID_PTR(info, StackInfo));
@@ -22,17 +23,17 @@ int  Stack_ctor_(Stack* stack, const StackInfo* info, int* error) {
 
     stack->size     = 0;
     stack->capacity = CAP_STEP;
-    stack->data     = (stack_el_t *)calloc(stack->capacity * sizeof(stack_el_t) + 2 * sizeof(long long), sizeof(char));
+    stack->el_size  = el_size;
+    long n = stack->capacity * stack->el_size + 2 * sizeof(long long);
+    stack->data     = (void *)calloc(stack->capacity * stack->el_size + 2 * sizeof(long long), sizeof(char));
     *((long long*)stack->data) = CANARY;
-    *((long long*)((char*)stack->data + sizeof(long long) + stack->capacity * sizeof(stack_el_t))) = CANARY;
-    stack->data = (stack_el_t*)((char*)stack->data + sizeof(long long));
+    *((long long*)((char*)stack->data + sizeof(long long) + stack->capacity * stack->el_size)) = CANARY;
+    stack->data = (void*)((char*)stack->data + sizeof(long long));
 
     stack->pr_info  = (StackInfo*)info;
 
     if (VALIDATE_LEVEL >= 2) {
-        for (int i = 0; i < stack->capacity; i++) {
-            stack->data[i] = poisons::UNINITIALIZED_INT;
-        }
+        memset(stack->data, poisons::UNINITIALIZED_ELEMENT, stack->capacity * stack->el_size);
     }
 
     if (VALIDATE_LEVEL >= 1) {
@@ -49,15 +50,15 @@ void Stack_dtor_(Stack* stack, int* error) {
 
     if (VALIDATE_LEVEL >= 2) {
         for (int i = 0; i < stack->size; i++) {
-            stack->data[i] = (stack_el_t)poisons::FREED_ELEMENTS;
+            //stack->data[i] = (stack_el_t)poisons::FREED_ELEMENT;
         }
     }
-    stack->data = (stack_el_t*)((char*)stack->data - sizeof(long long));
+    stack->data = (void*)((char*)stack->data - sizeof(long long));
     free(stack->data);
 
-    stack->data     = (stack_el_t*)poisons::FREED_PTR;
-    stack->capacity = poisons::FREED_ELEMENTS;
-    stack->size     = poisons::FREED_ELEMENTS;
+    stack->data     = (void*)poisons::FREED_PTR;
+    stack->capacity = poisons::FREED_ELEMENT;
+    stack->size     = poisons::FREED_ELEMENT;
 }
 
 int   Stack_error(const Stack* stack) {
@@ -75,7 +76,7 @@ int   Stack_error(const Stack* stack) {
     }
 
     long long* l_canary = (long long*)((char*)stack->data - sizeof(long long));
-    long long* r_canary = (long long*)((char*)stack->data + stack->capacity * sizeof(stack_el_t));
+    long long* r_canary = (long long*)((char*)stack->data + stack->capacity * stack->el_size);
     if (*l_canary != CANARY || *r_canary != CANARY) {
         return errors::DAMAGED_DATA_CANARY;
     }
@@ -88,9 +89,9 @@ int   Stack_error(const Stack* stack) {
 
     if (VALIDATE_LEVEL >= 2) {
         for (int i = 0; i < stack->size; i++) {
-            if (stack->data[i] == poisons::UNINITIALIZED_INT || stack->data[i] == poisons::FREED_ELEMENTS) {
-                return errors::BAD_ST_ELEMENT;
-            }
+//            if (stack->data[i] == poisons::UNINITIALIZED_ELEMENT || stack->data[i] == poisons::FREED_ELEMENT) {
+//                return errors::BAD_ST_ELEMENT;
+//            }
         }
     }
 
@@ -125,7 +126,7 @@ char* Stack_error_desc(int error_code) {
     }
 }
 
-int push(Stack* stack, stack_el_t value, int* error) {
+int  push(Stack* stack, void* value, int* error) {
     ASSERT_OK(stack, Stack, "Stack_error failed in the beginning of push func");
     CHECK_SOFT_ERROR(stack, Stack, error);
 
@@ -133,13 +134,13 @@ int push(Stack* stack, stack_el_t value, int* error) {
         change_capacity(stack, stack->capacity < CAP_BORDER ? 2 * stack->capacity : stack->capacity + CAP_STEP, error);
     }
 
-    stack->data[stack->size++] = value;
+    memcpy((char*)stack->data + stack->size++ * stack->el_size, value, stack->el_size);
 
     ASSERT_OK(stack, Stack, "Stack_error failed in the end of push func");
     CHECK_SOFT_ERROR(stack, Stack, error);
     return stack->size;
 }
-int  pop(Stack* stack, int* error) {
+void* pop(Stack* stack, int* error) {
     ASSERT_OK(stack, Stack, "Stack_error failed in the beginning of pop func");
     CHECK_SOFT_ERROR(stack, Stack, error);
 
@@ -152,11 +153,12 @@ int  pop(Stack* stack, int* error) {
             }
             assert(0 && "Cannot pop from empty stack");
         }
-        return errors::ST_EMPTY;
+        *error = errors::ST_EMPTY;
+        return NULL;
     }
 
-    stack_el_t del_element = stack->data[stack->size - 1];
-    stack->data[--stack->size] = poisons::FREED_ELEMENTS;
+    void* del_element = (void*)((char*)stack->data + (stack->size - 1) * stack->el_size);
+    memset((char*)stack->data + (--stack->size) * stack->el_size, poisons::FREED_ELEMENT, stack->el_size);
 
     if (stack->size >= CAP_BORDER && (stack->size + 2 * CAP_STEP) == stack->capacity) {
         change_capacity(stack, stack->capacity - CAP_STEP, error);
@@ -172,7 +174,7 @@ int  pop(Stack* stack, int* error) {
     CHECK_SOFT_ERROR(stack, Stack, error);
     return del_element;
 }
-stack_el_t top(const Stack* stack, int* error) {
+void* top(const Stack* stack, int* error) {
     ASSERT_OK(stack, Stack, "Stack_error failed in top func");
     CHECK_SOFT_ERROR(stack, Stack, error);
 
@@ -186,10 +188,10 @@ stack_el_t top(const Stack* stack, int* error) {
             assert(0 && "Cannot get top element from empty stack");
         }
         *error = errors::ST_EMPTY;
-        return errors::ST_EMPTY;
+        return NULL;
     }
 
-    return stack->data[stack->size - 1];
+    return (char*)stack->data + (stack->size - 1) * stack->el_size;
 }
 
 int change_capacity(Stack* stack, int new_capacity, int* error) {
@@ -201,16 +203,16 @@ int change_capacity(Stack* stack, int new_capacity, int* error) {
                stack->capacity, stack->size, new_capacity);
     }
 
-    stack->data = (stack_el_t*)((char*)stack->data - sizeof(long long));
-    stack_el_t* stack_data_ptr = (stack_el_t*)realloc(stack->data, new_capacity * sizeof(stack_el_t) + 2 * sizeof(long long));
-    if (!VALID_PTR(stack_data_ptr, stack_el_t)) {
+    stack->data = (void*)((char*)stack->data - sizeof(long long));
+    void* stack_data_ptr = (void*)realloc(stack->data, new_capacity * stack->el_size + 2 * sizeof(long long));
+    if (!VALID_PTR(stack_data_ptr, void)) {
         *error = errors::NOT_ENOUGH_MEMORY;
         return errors::NOT_ENOUGH_MEMORY;
     }
 
-    *(long long*)((char*)stack_data_ptr + sizeof(long long) + new_capacity * sizeof(stack_el_t)) = CANARY;
+    *(long long*)((char*)stack_data_ptr + sizeof(long long) + new_capacity * stack->el_size) = CANARY;
 
-    stack->data = (stack_el_t*)((char*)stack_data_ptr + sizeof(long long));
+    stack->data = (void*)((char*)stack_data_ptr + sizeof(long long));
     stack->capacity = new_capacity;
 
     ASSERT_OK(stack, Stack, "Stack_error failed in the end of change_capacity func")
@@ -224,7 +226,7 @@ void print_stack(const Stack* stack, int* error) {
 
     printf("Stack <%s> Size: %d Capacity: %d\n", stack->pr_info->type, stack->size, stack->capacity);
     for (int i = stack->size - 1; i >= 0; i--) {
-        printf("| %2d |\n", stack->data[i]);
+        printf("| %2d |\n", *((char*)stack->data + i * stack->el_size));
     }
     printf(" ++++ \n");
 }
@@ -266,22 +268,22 @@ void Stack_dump_(const Stack* stack, const StackInfo* current_info, char reason[
     }
 
     printf("\tSize     = %d", stack->size);
-    if      (stack->size == poisons::UNINITIALIZED_INT)     printf((RED " (uninitialized)" NATURAL));
-    else if (stack->size == poisons::FREED_ELEMENTS)        printf((RED " (freed)"         NATURAL));
+    if      (stack->size == poisons::UNINITIALIZED_ELEMENT)     printf((RED " (uninitialized)" NATURAL));
+    else if (stack->size == poisons::FREED_ELEMENT)        printf((RED " (freed)"         NATURAL));
     printf("\n");
 
     printf("\tCapacity = %d", stack->capacity);
-    if      (stack->capacity == poisons::UNINITIALIZED_INT) printf((RED " (uninitialized)" NATURAL));
-    else if (stack->capacity == poisons::FREED_ELEMENTS)    printf((RED " (freed)"         NATURAL));
+    if      (stack->capacity == poisons::UNINITIALIZED_ELEMENT) printf((RED " (uninitialized)" NATURAL));
+    else if (stack->capacity == poisons::FREED_ELEMENT)    printf((RED " (freed)"         NATURAL));
     printf("\n");
 
     printf("\tdata[" CYAN "%p" NATURAL "]", stack->data);
 
-    if (VALID_PTR(stack->data, stack_el_t)) {
+    if (VALID_PTR(stack->data, void)) {
         printf("\n\t{\n");
 
         long long* l_canary = (long long*)((char*)stack->data - sizeof(long long));
-        long long* r_canary = (long long*)((char*)stack->data + stack->capacity * sizeof(stack_el_t));
+        long long* r_canary = (long long*)((char*)stack->data + stack->capacity * stack->el_size);
         printf("\t\t Data left_canary  = %llX (%s)\n",   *l_canary, *l_canary == CANARY ? (GREEN "ok" NATURAL) : (RED "BAD" NATURAL));
         printf("\t\t Data right_canary = %llX (%s)\n\n", *r_canary, *r_canary == CANARY ? (GREEN "ok" NATURAL) : (RED "BAD" NATURAL));
 
@@ -289,9 +291,9 @@ void Stack_dump_(const Stack* stack, const StackInfo* current_info, char reason[
             printf("\t\t%s", i < stack->size ? (BLUE "*") : " ");
             printf("[%d]", i);
             if (i < stack->size) printf(NATURAL);
-            printf(" = %d", stack->data[i]);
-            if     (stack->data[i] == poisons::UNINITIALIZED_INT) printf((RED " (uninitialized)" NATURAL));
-            else if(stack->data[i] == poisons::FREED_ELEMENTS)    printf((RED " (freed)"         NATURAL));
+            printf(" = %d", *((char*)((char*)stack->data + i * stack->el_size)));
+            if     (*((char*)stack->data + i * stack->el_size) == poisons::UNINITIALIZED_ELEMENT) printf((RED " (uninitialized)" NATURAL));
+            else if(*((char*)stack->data + i * stack->el_size) == poisons::FREED_ELEMENT)    printf((RED " (freed)"         NATURAL));
             printf("\n");
         }
         printf("    }\n");
@@ -341,29 +343,29 @@ void Stack_dump_file_(const Stack* stack, const StackInfo* current_info, char re
     }
 
     fprintf(log, "\tSize     = %d", stack->size);
-    if      (stack->size == poisons::UNINITIALIZED_INT)     fprintf(log, " (uninitialized)");
-    else if (stack->size == poisons::FREED_ELEMENTS)        fprintf(log, " (freed)");
+    if      (stack->size == poisons::UNINITIALIZED_ELEMENT)     fprintf(log, " (uninitialized)");
+    else if (stack->size == poisons::FREED_ELEMENT)        fprintf(log, " (freed)");
     fprintf(log, "\n");
 
     fprintf(log, "\tCapacity = %d", stack->capacity);
-    if      (stack->capacity == poisons::UNINITIALIZED_INT) fprintf(log, " (uninitialized)");
-    else if (stack->capacity == poisons::FREED_ELEMENTS)    fprintf(log, " (freed)");
+    if      (stack->capacity == poisons::UNINITIALIZED_ELEMENT) fprintf(log, " (uninitialized)");
+    else if (stack->capacity == poisons::FREED_ELEMENT)    fprintf(log, " (freed)");
     fprintf(log, "\n");
 
     fprintf(log, "\tdata[%p]", stack->data);
 
-    if (VALID_PTR(stack->data, stack_el_t)) {
+    if (VALID_PTR(stack->data, void)) {
         fprintf(log, "\n\t{\n");
 
         long long* l_canary = (long long*)((char*)stack->data - sizeof(long long));
-        long long* r_canary = (long long*)((char*)stack->data + stack->capacity * sizeof(stack_el_t));
+        long long* r_canary = (long long*)((char*)stack->data + stack->capacity * stack->el_size);
         fprintf(log, "\t\t Data left_canary  = %llX (%s)\n",   *l_canary, *l_canary == CANARY ? "ok" : "BAD");
         fprintf(log, "\t\t Data right_canary = %llX (%s)\n\n", *r_canary, *r_canary == CANARY ? "ok" : "BAD");
 
         for (int i = 0; i < stack->capacity; i++) {
-            fprintf(log, "%*s%s[%d] = %d", 8, " ", i < stack->size ? "*" : " ", i, stack->data[i]);
-            if     (stack->data[i] == poisons::UNINITIALIZED_INT) fprintf(log, " (uninitialized)");
-            else if(stack->data[i] == poisons::FREED_ELEMENTS)    fprintf(log, " (freed)");
+            fprintf(log, "%*s%s[%d] = %d", 8, " ", i < stack->size ? "*" : " ", i, *((char*)stack->data + i * stack->el_size));
+            if     (*((char*)stack->data + i * stack->el_size) == poisons::UNINITIALIZED_ELEMENT) fprintf(log, " (uninitialized)");
+            else if(*((char*)stack->data + i * stack->el_size) == poisons::FREED_ELEMENT)    fprintf(log, " (freed)");
             fprintf(log, "\n");
         }
         fprintf(log, "    }\n");

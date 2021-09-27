@@ -13,12 +13,14 @@ struct Prison {
 
 int main(int argc, char** argv) {
     Stack st = {};
-    stack_ctor(st);
+    stack_ctor(st, sizeof(char));
 
     Prison prison = {{ 0 }, st, { 0 }};
 
     for (int i = 0; i < (CAP_BORDER + 6 * CAP_STEP) / 2; i++) {
-        push(&prison.stack, i + 1);
+        char number = 'a' + i % 27;
+        push(&prison.stack, &number);
+        //if (i == CAP_BORDER / 2) *((char*)prison.stack.data - 8) = 127;
     }
 
     printf("Stack size: %d\n", prison.stack.size);

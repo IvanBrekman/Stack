@@ -34,11 +34,11 @@
 #define NATURAL     "\033[0m"
 
 enum poisons {
-    UNINITIALIZED_PTR =  6,
-    UNINITIALIZED_INT = -666,
+    UNINITIALIZED_PTR     =   6,
+    UNINITIALIZED_ELEMENT = -14,
 
-    FREED_ELEMENTS    = -667,
-    FREED_PTR         = 12
+    FREED_ELEMENT         = -15,
+    FREED_PTR             =  12
 };
 
 #include <time.h>
