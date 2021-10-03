@@ -2,14 +2,24 @@
 // Created by ivanbrekman on 20.09.2021.
 //
 
-#include <assert.h>
+#include <cmath>
+#include <cassert>
 #include <malloc.h>
+
+#ifndef VALIDATE_LEVEL
+    #define VALIDATE_LEVEL 4
+#endif
 
 #include "stack.h"
 #include "errorlib.h"
 
+//! Stack constructor
+//! \param stack pointer to empty stack
+//! \param info  pointer to structure with stack info
+//! \param error pointer to value, where error will be written (default: NULL)
+//! \return      1, if all is good
 int  Stack_ctor_(Stack* stack, const StackInfo* info, int* error) {
-    if (VALIDATE_LEVEL >= 1) {
+    if (VALIDATE_LEVEL >= WEAK_VALIDATE) {
         assert(VALID_PTR(stack, Stack));
         assert(VALID_PTR(info, StackInfo));
     }
@@ -27,39 +37,53 @@ int  Stack_ctor_(Stack* stack, const StackInfo* info, int* error) {
     *((long long*)((char*)stack->data + sizeof(long long) + stack->capacity * sizeof(stack_el_t))) = CANARY;
     stack->data = (stack_el_t*)((char*)stack->data + sizeof(long long));
 
-    stack->pr_info  = (StackInfo*)info;
+    stack->info_  = (StackInfo*)info;
 
-    if (VALIDATE_LEVEL >= 2) {
+    if (VALIDATE_LEVEL >= MEDIUM_VALIDATE) {
         for (int i = 0; i < stack->capacity; i++) {
             stack->data[i] = poisons::UNINITIALIZED_INT;
         }
     }
 
-    if (VALIDATE_LEVEL >= 1) {
+    UPDATE_STACK_HASH(stack);
+
+    if (VALIDATE_LEVEL >= WEAK_VALIDATE) {
         stack_dump(*stack, "check init");
     }
 
     ASSERT_OK(stack, Stack, "Stack_error failed. Invalid Stack constructor");
     CHECK_SOFT_ERROR(stack, Stack, error);
-    return 0;
+    return 1;
 }
+//! Stack destructor
+//! \param stack pointer to stack object
+//! \param error pointer to value, where error will be written (default: NULL)
 void Stack_dtor_(Stack* stack, int* error) {
     ASSERT_OK(stack, Stack, "Stack_error failed on destructor (maybe repeat dtor call?)");
     CHECK_SOFT_ERROR(stack, Stack, error);
 
-    if (VALIDATE_LEVEL >= 2) {
+    if (VALIDATE_LEVEL >= MEDIUM_VALIDATE) {
         for (int i = 0; i < stack->size; i++) {
-            stack->data[i] = (stack_el_t)poisons::FREED_ELEMENTS;
+            stack->data[i] = (stack_el_t)poisons::FREED_ELEMENT;
         }
     }
     stack->data = (stack_el_t*)((char*)stack->data - sizeof(long long));
     free(stack->data);
 
     stack->data     = (stack_el_t*)poisons::FREED_PTR;
-    stack->capacity = poisons::FREED_ELEMENTS;
-    stack->size     = poisons::FREED_ELEMENTS;
+    stack->capacity = poisons::FREED_ELEMENT;
+    stack->size     = poisons::FREED_ELEMENT;
+
+    if (VALIDATE_LEVEL >= STRONG_VALIDATE) {
+        stack->hash      = poisons::FREED_ELEMENT;
+        stack->hash_data = poisons::FREED_ELEMENT;
+        stack->hash_info = poisons::FREED_ELEMENT;
+    }
 }
 
+//! Function to detect errors in stack
+//! \param stack pointer to stack
+//! \return      error code (0 if all is good)
 int   Stack_error(const Stack* stack) {
     if (stack == NULL) {
         return errors::ST_INVALID_PTR;
@@ -74,11 +98,6 @@ int   Stack_error(const Stack* stack) {
         return errors::INCORRECT_ST_CAPACITY;
     }
 
-    long long* l_canary = (long long*)((char*)stack->data - sizeof(long long));
-    long long* r_canary = (long long*)((char*)stack->data + stack->capacity * sizeof(stack_el_t));
-    if (*l_canary != CANARY || *r_canary != CANARY) {
-        return errors::DAMAGED_DATA_CANARY;
-    }
     if (stack->left_canary != CANARY || stack->right_canary != CANARY) {
         return errors::DAMAGED_STACK_CANARY;
     }
@@ -86,16 +105,44 @@ int   Stack_error(const Stack* stack) {
         return errors::ST_SIZE_EXCEEDED_CAPACITY;
     }
 
-    if (VALIDATE_LEVEL >= 2) {
+    if (VALIDATE_LEVEL >= STRONG_VALIDATE) {
+        long long hash = Stack_hash_(stack);
+        if (hash != stack->hash) {
+            return errors::INCORRECT_ST_HASH;
+        }
+    }
+
+    long long l_canary = *(long long*)((char*)stack->data - sizeof(long long));
+    long long r_canary = *(long long*)((char*)stack->data + stack->capacity * sizeof(stack_el_t));
+    if (l_canary != CANARY || r_canary != CANARY) {
+        return errors::DAMAGED_DATA_CANARY;
+    }
+
+    if (VALIDATE_LEVEL >= MEDIUM_VALIDATE) {
         for (int i = 0; i < stack->size; i++) {
-            if (stack->data[i] == poisons::UNINITIALIZED_INT || stack->data[i] == poisons::FREED_ELEMENTS) {
+            if (stack->data[i] == poisons::UNINITIALIZED_INT || stack->data[i] == poisons::FREED_ELEMENT) {
                 return errors::BAD_ST_ELEMENT;
             }
         }
     }
 
+    if (VALIDATE_LEVEL >= STRONG_VALIDATE) {
+        long long hash = Stack_hash_ptr_(stack->data, stack->capacity);
+        if (hash != stack->hash_data) {
+            return errors::INCORRECT_ST_DATA_HASH;
+        }
+
+        hash = Stack_hash_ptr_(stack->info_, sizeof(*stack->info_));
+        if (hash != stack->hash_info) {
+            return errors::INCORRECT_ST_INFO_HASH;
+        }
+    }
+
     return 0;
 }
+//! Function with errors description
+//! \param error_code code of error
+//! \return           error description
 char* Stack_error_desc(int error_code) {
     switch (error_code) {
         case 0:
@@ -120,11 +167,50 @@ char* Stack_error_desc(int error_code) {
             return "Stack damaged. Something messed stack.data canary";
         case errors::BAD_ST_ELEMENT:
             return "Stack element is incorrect";
+        case errors::INCORRECT_ST_HASH:
+            return "Stack has incorrect hash. Something messed data in stack";
+        case errors::INCORRECT_ST_DATA_HASH:
+            return "Stack.data has incorrect hash. Something messed data in stack.data";
+        case errors::INCORRECT_ST_INFO_HASH:
+            return "Stack.info_ has incorrect hash. Something messed data in stack.info";
         default:
             return "Unknown error code";
     }
 }
 
+//! Function calculate stack hash
+//! \param stack pointer to stack
+//! \return      stack hash
+unsigned long long Stack_hash_(const Stack* stack) {
+    unsigned long long hash = 0;
+
+    for (int i = 0 ; i < sizeof(*stack); i++) {
+        if ((i < (char*)&stack->hash - (char*)stack) || (i >= (char*)&stack->hash - (char*)stack + 3 * sizeof(stack->hash))) {
+            hash += *((char*)stack + i) * (int)pow(2, i % 10);
+        }
+    }
+
+    return hash;
+}
+//! Function calculate pointer data hash
+//! \param ptr  pointer to data
+//! \param size size of data
+//! \return     pointer hash
+unsigned long long Stack_hash_ptr_(const void* ptr, size_t size) {
+    unsigned long long hash = 0;
+
+    for (int i = 0 ; i < size; i++) {
+        hash += *((char*)ptr + i) * (int)pow(2, i % 10);
+    }
+
+    return hash;
+}
+
+//! Function write value to stack
+//! \param stack pointer to stack
+//! \param value written value
+//! \param error pointer to value, where error will be written (default: NULL)
+//! \return      stack size
 int push(Stack* stack, stack_el_t value, int* error) {
     ASSERT_OK(stack, Stack, "Stack_error failed in the beginning of push func");
     CHECK_SOFT_ERROR(stack, Stack, error);
@@ -135,19 +221,24 @@ int push(Stack* stack, stack_el_t value, int* error) {
 
     stack->data[stack->size++] = value;
 
+    UPDATE_STACK_HASH(stack);
     ASSERT_OK(stack, Stack, "Stack_error failed in the end of push func");
     CHECK_SOFT_ERROR(stack, Stack, error);
     return stack->size;
 }
+//! Function delete top element from stack
+//! \param stack pointer to stack
+//! \param error pointer to value, where error will be written (default: NULL)
+//! \return      deleted value (or errors::ST_EMPTY if stack is empty)
 int  pop(Stack* stack, int* error) {
     ASSERT_OK(stack, Stack, "Stack_error failed in the beginning of pop func");
     CHECK_SOFT_ERROR(stack, Stack, error);
 
     if (stack->size == 0) {
-        if (VALIDATE_LEVEL >= 1) {
+        if (VALIDATE_LEVEL >= WEAK_VALIDATE) {
             StackInfo cur_info = LOCATION(obj);
             Stack_dump_(stack, &cur_info, "Cannot pop from empty stack");
-            if (VALIDATE_LEVEL >= 3) {
+            if (VALIDATE_LEVEL >= STRONG_VALIDATE) {
                 Stack_dump_file_(stack, &cur_info, "Cannot pop from empty stack", "log.txt");
             }
             assert(0 && "Cannot pop from empty stack");
@@ -156,7 +247,8 @@ int  pop(Stack* stack, int* error) {
     }
 
     stack_el_t del_element = stack->data[stack->size - 1];
-    stack->data[--stack->size] = poisons::FREED_ELEMENTS;
+    stack->data[--stack->size] = poisons::FREED_ELEMENT;
+    UPDATE_STACK_HASH(stack);
 
     if (stack->size >= CAP_BORDER && (stack->size + 2 * CAP_STEP) == stack->capacity) {
         change_capacity(stack, stack->capacity - CAP_STEP, error);
@@ -168,19 +260,24 @@ int  pop(Stack* stack, int* error) {
         change_capacity(stack, CAP_STEP, error);
     }
 
+    UPDATE_STACK_HASH(stack);
     ASSERT_OK(stack, Stack, "Stack_error failed in the end of pop func");
     CHECK_SOFT_ERROR(stack, Stack, error);
     return del_element;
 }
+//! Function get stack top element
+//! \param stack pointer to stack
+//! \param error pointer to value, where error will be written (default: NULL)
+//! \return      stack top element
 stack_el_t top(const Stack* stack, int* error) {
     ASSERT_OK(stack, Stack, "Stack_error failed in top func");
     CHECK_SOFT_ERROR(stack, Stack, error);
 
     if (stack->size == 0) {
-        if (VALIDATE_LEVEL >= 1) {
+        if (VALIDATE_LEVEL >= WEAK_VALIDATE) {
             StackInfo cur_info = LOCATION(obj);
             Stack_dump_(stack, &cur_info, "Cannot get top element from empty stack");
-            if (VALIDATE_LEVEL >= 3) {
+            if (VALIDATE_LEVEL >= STRONG_VALIDATE) {
                 Stack_dump_file_(stack, &cur_info, "Cannot get top element from empty stack", "log.txt");
             }
             assert(0 && "Cannot get top element from empty stack");
@@ -192,11 +289,16 @@ stack_el_t top(const Stack* stack, int* error) {
     return stack->data[stack->size - 1];
 }
 
+//! Function changes stack capacity
+//! \param stack        pointer to stack
+//! \param new_capacity new stack capacity
+//! \param error        pointer to value, where error will be written (default: NULL)
+//! \return             new stack capacity (or errors::NOT_ENOUGH_MEMORY)
 int change_capacity(Stack* stack, int new_capacity, int* error) {
-    ASSERT_OK(stack, Stack, "Stack_error failed in the beginning check_capacity func");
+    ASSERT_OK(stack, Stack, "Stack_error failed in the beginning change_capacity func");
     CHECK_SOFT_ERROR(stack, Stack, error);
 
-    if (VALIDATE_LEVEL >= 1) {
+    if (VALIDATE_LEVEL >= WEAK_VALIDATE) {
         printf("Capacity:     %d\nSize:         %d\nNew capacity: %d\n\n",
                stack->capacity, stack->size, new_capacity);
     }
@@ -209,20 +311,28 @@ int change_capacity(Stack* stack, int new_capacity, int* error) {
     }
 
     *(long long*)((char*)stack_data_ptr + sizeof(long long) + new_capacity * sizeof(stack_el_t)) = CANARY;
-
     stack->data = (stack_el_t*)((char*)stack_data_ptr + sizeof(long long));
+
+    if (VALIDATE_LEVEL >= MEDIUM_VALIDATE) {
+        if (stack->capacity < new_capacity) {
+            for (int i = stack->capacity; i < new_capacity; i++) {
+                stack->data[i] = poisons::UNINITIALIZED_INT;
+            }
+        }
+    }
     stack->capacity = new_capacity;
 
+    UPDATE_STACK_HASH(stack);
     ASSERT_OK(stack, Stack, "Stack_error failed in the end of change_capacity func")
     CHECK_SOFT_ERROR(stack, Stack, error);
-    return new_capacity;
+    return stack->capacity;
 }
 
 void print_stack(const Stack* stack, int* error) {
     ASSERT_OK(stack, Stack, "Stack_error failed in print_stack func");
     CHECK_SOFT_ERROR(stack, Stack, error);
 
-    printf("Stack <%s> Size: %d Capacity: %d\n", stack->pr_info->type, stack->size, stack->capacity);
+    printf("Stack <%s> Size: %d Capacity: %d\n", stack->info_->type, stack->size, stack->capacity);
     for (int i = stack->size - 1; i >= 0; i--) {
         printf("| %2d |\n", stack->data[i]);
     }
@@ -253,13 +363,29 @@ void Stack_dump_(const Stack* stack, const StackInfo* current_info, char reason[
            );
 
     printf("\tStack definition: \"" ORANGE_UNL "%s" NATURAL "\" from %s:%d, " CYAN "%s" NATURAL " function\n",
-           stack->pr_info->name, stack->pr_info->file,
-           stack->pr_info->line, stack->pr_info->func);
+           stack->info_->name, stack->info_->file,
+           stack->info_->line, stack->info_->func);
 
     printf("{\n");
 
     printf("\tLeft_canary  = %llX (%s)\n",   stack->left_canary,  stack->left_canary  == CANARY ? (GREEN "ok" NATURAL) : (RED "BAD" NATURAL));
-    printf("\tRight_canary = %llX (%s)\n\n", stack->right_canary, stack->right_canary == CANARY ? (GREEN "ok" NATURAL) : (RED "BAD" NATURAL));
+    printf("\tRight_canary = %llX (%s)\n",   stack->right_canary, stack->right_canary == CANARY ? (GREEN "ok" NATURAL) : (RED "BAD" NATURAL));
+
+    if (VALIDATE_LEVEL >= STRONG_VALIDATE) {
+        unsigned long long hash = Stack_hash_(stack);
+        printf("\tHash (saved) = %llu\n",   stack->hash);
+        printf("\tHash (calc)  = %llu\n\n", hash);
+
+        printf("\tHash data (saved) = %llu\n",   stack->hash_data);
+        printf("\tHash data (calc)  = ");
+        if (stack->hash == hash) printf("%llu\n\n", Stack_hash_ptr_(stack->data, stack->capacity));
+        else                     printf(RED "cant calculate (damaged stack data)\n\n" NATURAL);
+
+        printf("\tHash info (saved) = %llu\n",   stack->hash_info);
+        printf("\tHash info (calc)  = ");
+        if (stack->hash == hash) printf("%llu\n\n", Stack_hash_ptr_(stack->info_, sizeof(*stack->info_)));
+        else                     printf(RED "cant calculate (damaged stack data)\n\n" NATURAL);
+    }
 
     if (stack->size > stack->capacity) {
         printf((RED "\tStack size exceeded Stack capacity\n" NATURAL));
@@ -267,17 +393,20 @@ void Stack_dump_(const Stack* stack, const StackInfo* current_info, char reason[
 
     printf("\tSize     = %d", stack->size);
     if      (stack->size == poisons::UNINITIALIZED_INT)     printf((RED " (uninitialized)" NATURAL));
-    else if (stack->size == poisons::FREED_ELEMENTS)        printf((RED " (freed)"         NATURAL));
+    else if (stack->size == poisons::FREED_ELEMENT)         printf((RED " (freed)"         NATURAL));
     printf("\n");
 
     printf("\tCapacity = %d", stack->capacity);
     if      (stack->capacity == poisons::UNINITIALIZED_INT) printf((RED " (uninitialized)" NATURAL));
-    else if (stack->capacity == poisons::FREED_ELEMENTS)    printf((RED " (freed)"         NATURAL));
+    else if (stack->capacity == poisons::FREED_ELEMENT)     printf((RED " (freed)"         NATURAL));
     printf("\n");
 
     printf("\tdata[" CYAN "%p" NATURAL "]", stack->data);
 
-    if (VALID_PTR(stack->data, stack_el_t)) {
+    if (err == errors::INCORRECT_ST_HASH) {
+        printf(RED " cant analyze (damaged stack data)\n" NATURAL);
+    }
+    else if (VALID_PTR(stack->data, stack_el_t)) {
         printf("\n\t{\n");
 
         long long* l_canary = (long long*)((char*)stack->data - sizeof(long long));
@@ -291,7 +420,7 @@ void Stack_dump_(const Stack* stack, const StackInfo* current_info, char reason[
             if (i < stack->size) printf(NATURAL);
             printf(" = %d", stack->data[i]);
             if     (stack->data[i] == poisons::UNINITIALIZED_INT) printf((RED " (uninitialized)" NATURAL));
-            else if(stack->data[i] == poisons::FREED_ELEMENTS)    printf((RED " (freed)"         NATURAL));
+            else if(stack->data[i] == poisons::FREED_ELEMENT)     printf((RED " (freed)"         NATURAL));
             printf("\n");
         }
         printf("    }\n");
@@ -321,20 +450,36 @@ void Stack_dump_file_(const Stack* stack, const StackInfo* current_info, char re
 
     fprintf(log, "Stack <%s>[%p] (%s) \"%s\" from %s:%d, %s function\n"
            "\tStack definition: \"%s\" from %s:%d, %s function\n{\n",
-           current_info->type,
-           stack,
+            current_info->type,
+            stack,
            (err) ? "FAILED" : "ok",
-           current_info->name,
-           current_info->file,
-           current_info->line,
-           current_info->func,
+            current_info->name,
+            current_info->file,
+            current_info->line,
+            current_info->func,
 
-           stack->pr_info->name, stack->pr_info->file,
-           stack->pr_info->line, stack->pr_info->func
+            stack->info_->name, stack->info_->file,
+            stack->info_->line, stack->info_->func
            );
 
-    fprintf(log, "\tLeft_canary  = %llX (%s)\n",   stack->left_canary,  stack->left_canary  == CANARY ? "ok" : "BAD");
-    fprintf(log, "\tRight_canary = %llX (%s)\n\n", stack->right_canary, stack->right_canary == CANARY ? "ok" : "BAD");
+    fprintf(log, "\tLeft_canary  = %llX (%s)\n", stack->left_canary,  stack->left_canary  == CANARY ? "ok" : "BAD");
+    fprintf(log, "\tRight_canary = %llX (%s)\n", stack->right_canary, stack->right_canary == CANARY ? "ok" : "BAD");
+
+    if (VALIDATE_LEVEL >= STRONG_VALIDATE) {
+        unsigned long long hash = Stack_hash_(stack);
+        fprintf(log, "\tHash (saved) = %llu\n",   stack->hash);
+        fprintf(log, "\tHash (calc)  = %llu\n\n", hash);
+
+        fprintf(log, "\tHash data (saved) = %llu\n",   stack->hash_data);
+        fprintf(log, "\tHash data (calc)  = ");
+        if (stack->hash == hash) fprintf(log, "%llu\n\n", Stack_hash_ptr_(stack->data, stack->capacity));
+        else                     fprintf(log, RED "cant calculate (damaged stack data)\n\n" NATURAL);
+
+        fprintf(log, "\tHash info (saved) = %llu\n",   stack->hash_info);
+        fprintf(log, "\tHash info (calc)  = ");
+        if (stack->hash == hash) fprintf(log, "%llu\n\n", Stack_hash_ptr_(stack->info_, sizeof(*stack->info_)));
+        else                     fprintf(log, RED "cant calculate (damaged stack data)\n\n" NATURAL);
+    }
 
     if (stack->size > stack->capacity) {
         fprintf(log, "\tStack size exceeded Stack capacity\n");
@@ -342,17 +487,20 @@ void Stack_dump_file_(const Stack* stack, const StackInfo* current_info, char re
 
     fprintf(log, "\tSize     = %d", stack->size);
     if      (stack->size == poisons::UNINITIALIZED_INT)     fprintf(log, " (uninitialized)");
-    else if (stack->size == poisons::FREED_ELEMENTS)        fprintf(log, " (freed)");
+    else if (stack->size == poisons::FREED_ELEMENT)         fprintf(log, " (freed)");
     fprintf(log, "\n");
 
     fprintf(log, "\tCapacity = %d", stack->capacity);
     if      (stack->capacity == poisons::UNINITIALIZED_INT) fprintf(log, " (uninitialized)");
-    else if (stack->capacity == poisons::FREED_ELEMENTS)    fprintf(log, " (freed)");
+    else if (stack->capacity == poisons::FREED_ELEMENT)     fprintf(log, " (freed)");
     fprintf(log, "\n");
 
     fprintf(log, "\tdata[%p]", stack->data);
 
-    if (VALID_PTR(stack->data, stack_el_t)) {
+    if (err == errors::INCORRECT_ST_HASH) {
+        fprintf(log, RED " cant analyze (damaged stack data)\n" NATURAL);
+    }
+    else if (VALID_PTR(stack->data, stack_el_t)) {
         fprintf(log, "\n\t{\n");
 
         long long* l_canary = (long long*)((char*)stack->data - sizeof(long long));
@@ -363,7 +511,7 @@ void Stack_dump_file_(const Stack* stack, const StackInfo* current_info, char re
         for (int i = 0; i < stack->capacity; i++) {
             fprintf(log, "%*s%s[%d] = %d", 8, " ", i < stack->size ? "*" : " ", i, stack->data[i]);
             if     (stack->data[i] == poisons::UNINITIALIZED_INT) fprintf(log, " (uninitialized)");
-            else if(stack->data[i] == poisons::FREED_ELEMENTS)    fprintf(log, " (freed)");
+            else if(stack->data[i] == poisons::FREED_ELEMENT)     fprintf(log, " (freed)");
             fprintf(log, "\n");
         }
         fprintf(log, "    }\n");

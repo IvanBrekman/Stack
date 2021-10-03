@@ -33,11 +33,19 @@
 
 #define NATURAL     "\033[0m"
 
+enum validate_level {
+    NO_VALIDATE      = 0, // No checks in program
+    WEAK_VALIDATE    = 1, // Checks only fields with  O(1) complexity
+    MEDIUM_VALIDATE  = 2, // Checks filed, which need O(n) complexity
+    STRONG_VALIDATE  = 3, // All checks (hash and others)
+    HIGHEST_VALIDATE = 4  // Error will write in log file
+};
+
 enum poisons {
     UNINITIALIZED_PTR =  6,
     UNINITIALIZED_INT = -666,
 
-    FREED_ELEMENTS    = -667,
+    FREED_ELEMENT     = -667,
     FREED_PTR         = 12
 };
 
@@ -49,9 +57,9 @@ enum poisons {
     free(date);                                                     \
     date = NULL;                                                    \
 };
-#define FPRINT_DATE(file) {                                  \
+#define FPRINT_DATE(file) {                                         \
     char* date = (char*)calloc(40, sizeof(char));                   \
-    fprintf(file, "Time: %s\n", datetime(date));    \
+    fprintf(file, "Time: %s\n", datetime(date));                    \
     free(date);                                                     \
     date = NULL;                                                    \
 };
