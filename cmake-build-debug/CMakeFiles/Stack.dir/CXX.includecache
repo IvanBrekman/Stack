@@ -10,8 +10,12 @@
 time.h
 -
 
-/home/ivanbrekman/CLionProjects/Stack/main.cpp
-stdio.h
+/home/ivanbrekman/CLionProjects/Stack/stack.cpp
+cmath
+-
+cassert
+-
+malloc.h
 -
 stack.h
 /home/ivanbrekman/CLionProjects/Stack/stack.h

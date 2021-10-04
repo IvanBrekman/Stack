@@ -5,13 +5,17 @@
 #ifndef STACK_ERRORLIB_H
 #define STACK_ERRORLIB_H
 
-#ifndef TYPE
+#if !defined(TYPE)
     #define TYPE "void"
 #endif
 
+
 #define dbg(code) do{ printf("%s:%d\n", __FILE__, __LINE__); code }while(0)
-#define VALID_PTR(ptr, type) ((ptr) != NULL && (ptr) != (type*)poisons::UNINITIALIZED_PTR && (ptr) != (type*)poisons::FREED_PTR)
 #define LOCATION(var) { TYPE, #var, __FILE__, __FUNCTION__, __LINE__ }
+#define VALID_PTR(ptr, type) (                                                                                                          \
+                                (ptr) != NULL && (ptr) != (type*)poisons::UNINITIALIZED_PTR && (ptr) != (type*)poisons::FREED_PTR &&    \
+                                !isbadreadptr((void*)(ptr))                                                                                    \
+                             )
 
 #define BLACK       "\033[1;30m"
 #define RED         "\033[1;31m"
@@ -64,6 +68,7 @@ enum poisons {
     date = NULL;                                                    \
 };
 
+int isbadreadptr(void* ptr);
 char* datetime(char* calendar_date);
 
 #endif //STACK_ERRORLIB_H

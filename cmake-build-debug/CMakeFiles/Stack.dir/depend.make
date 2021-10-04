@@ -7,8 +7,14 @@ CMakeFiles/Stack.dir/errorlib.cpp.o: \
 CMakeFiles/Stack.dir/main.cpp.o: \
  ../errorlib.h \
  ../main.cpp \
- ../stack.h
+ ../stack.h \
+ ../tests/test.h
 CMakeFiles/Stack.dir/stack.cpp.o: \
  ../errorlib.h \
  ../stack.cpp \
  ../stack.h
+CMakeFiles/Stack.dir/tests/test.cpp.o: \
+ ../errorlib.h \
+ ../stack.h \
+ ../tests/test.cpp \
+ ../tests/test.h

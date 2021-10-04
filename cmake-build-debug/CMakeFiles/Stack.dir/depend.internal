@@ -8,7 +8,13 @@ CMakeFiles/Stack.dir/main.cpp.o
  /home/ivanbrekman/CLionProjects/Stack/errorlib.h
  /home/ivanbrekman/CLionProjects/Stack/main.cpp
  /home/ivanbrekman/CLionProjects/Stack/stack.h
+ /home/ivanbrekman/CLionProjects/Stack/tests/test.h
 CMakeFiles/Stack.dir/stack.cpp.o
  /home/ivanbrekman/CLionProjects/Stack/errorlib.h
  /home/ivanbrekman/CLionProjects/Stack/stack.cpp
  /home/ivanbrekman/CLionProjects/Stack/stack.h
+CMakeFiles/Stack.dir/tests/test.cpp.o
+ /home/ivanbrekman/CLionProjects/Stack/errorlib.h
+ /home/ivanbrekman/CLionProjects/Stack/stack.h
+ /home/ivanbrekman/CLionProjects/Stack/tests/test.cpp
+ /home/ivanbrekman/CLionProjects/Stack/tests/test.h

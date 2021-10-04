@@ -8,6 +8,8 @@
 #include <malloc.h>
 #include "errorlib.h"
 
+#define $(code) ( printf("%s:%d >>> %s...\n", __FILE__, __LINE__, #code), code )
+
 #define CANARY 0xDEADA2EA // DEAD AREA
 #define CAP_STEP    32
 #define CAP_BORDER 256
@@ -33,9 +35,10 @@ typedef int stack_el_t;
     }                                                                \
 }
 #define CHECK_SOFT_ERROR(obj, type, error) {                         \
-    if (VALIDATE_LEVEL <= NO_VALIDATE) {                             \
+    if (VALIDATE_LEVEL >= NO_VALIDATE) {                             \
         int err = type ## _error(obj);                               \
         if (err && VALID_PTR(error, int)) *(error) = err;            \
+        if (err) return err;                                         \
     }                                                                \
 }
 #define stack_ctor(st) {                                             \
@@ -50,7 +53,7 @@ typedef int stack_el_t;
     if (VALID_PTR(info, StackInfo)) {                                \
         *info = LOCATION(st);                                        \
     }                                                                \
-    Stack_dump_(&(st), info, reason);                               \
+    Stack_dump_(&(st), info, reason);                                \
 }
 
 #include "errorlib.h"
@@ -99,8 +102,8 @@ struct StackInfo {
     int line;
 };
 
-int  Stack_ctor_(Stack* stack, const StackInfo* info, int* error=NULL);
-void Stack_dtor_(Stack* stack, int* error=NULL);
+int Stack_ctor_(Stack* stack, const StackInfo* info, int* error=NULL);
+int Stack_dtor_(Stack* stack, int* error=NULL);
 
 int   Stack_error(const Stack* stack);
 char* Stack_error_desc(int error_code);
@@ -114,7 +117,7 @@ stack_el_t top(const Stack* stack, int* error=NULL);
 
 int change_capacity(Stack* stack, int new_capacity, int* error=NULL);
 
-void print_stack     (const Stack* stack, int* error=NULL);
+int  print_stack     (const Stack* stack, int* error=NULL);
 void Stack_dump_     (const Stack* stack, const StackInfo* current_info, char reason[]);
 void Stack_dump_file_(const Stack* stack, const StackInfo* current_info, char reason[], const char* log_file);
 
