@@ -11,6 +11,7 @@ set(CMAKE_DEPENDS_CHECK_CXX
   "/home/ivanbrekman/CLionProjects/Stack/errorlib.cpp" "/home/ivanbrekman/CLionProjects/Stack/cmake-build-debug/CMakeFiles/Stack.dir/errorlib.cpp.o"
   "/home/ivanbrekman/CLionProjects/Stack/main.cpp" "/home/ivanbrekman/CLionProjects/Stack/cmake-build-debug/CMakeFiles/Stack.dir/main.cpp.o"
   "/home/ivanbrekman/CLionProjects/Stack/stack.cpp" "/home/ivanbrekman/CLionProjects/Stack/cmake-build-debug/CMakeFiles/Stack.dir/stack.cpp.o"
+  "/home/ivanbrekman/CLionProjects/Stack/tests/errors_pathogens.cpp" "/home/ivanbrekman/CLionProjects/Stack/cmake-build-debug/CMakeFiles/Stack.dir/tests/errors_pathogens.cpp.o"
   "/home/ivanbrekman/CLionProjects/Stack/tests/test.cpp" "/home/ivanbrekman/CLionProjects/Stack/cmake-build-debug/CMakeFiles/Stack.dir/tests/test.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")

@@ -201,6 +201,30 @@ stack.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Stack.dir/build.make CMakeFiles/Stack.dir/stack.cpp.s
 .PHONY : stack.cpp.s
 
+tests/errors_pathogens.o: tests/errors_pathogens.cpp.o
+.PHONY : tests/errors_pathogens.o
+
+# target to build an object file
+tests/errors_pathogens.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Stack.dir/build.make CMakeFiles/Stack.dir/tests/errors_pathogens.cpp.o
+.PHONY : tests/errors_pathogens.cpp.o
+
+tests/errors_pathogens.i: tests/errors_pathogens.cpp.i
+.PHONY : tests/errors_pathogens.i
+
+# target to preprocess a source file
+tests/errors_pathogens.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Stack.dir/build.make CMakeFiles/Stack.dir/tests/errors_pathogens.cpp.i
+.PHONY : tests/errors_pathogens.cpp.i
+
+tests/errors_pathogens.s: tests/errors_pathogens.cpp.s
+.PHONY : tests/errors_pathogens.s
+
+# target to generate assembly for a file
+tests/errors_pathogens.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Stack.dir/build.make CMakeFiles/Stack.dir/tests/errors_pathogens.cpp.s
+.PHONY : tests/errors_pathogens.cpp.s
+
 tests/test.o: tests/test.cpp.o
 .PHONY : tests/test.o
 
@@ -243,6 +267,9 @@ help:
 	@echo "... stack.o"
 	@echo "... stack.i"
 	@echo "... stack.s"
+	@echo "... tests/errors_pathogens.o"
+	@echo "... tests/errors_pathogens.i"
+	@echo "... tests/errors_pathogens.s"
 	@echo "... tests/test.o"
 	@echo "... tests/test.i"
 	@echo "... tests/test.s"

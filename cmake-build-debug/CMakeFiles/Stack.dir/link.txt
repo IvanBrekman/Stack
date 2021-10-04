@@ -1,1 +1,1 @@
-/usr/bin/c++ -g CMakeFiles/Stack.dir/main.cpp.o CMakeFiles/Stack.dir/stack.cpp.o CMakeFiles/Stack.dir/errorlib.cpp.o CMakeFiles/Stack.dir/tests/test.cpp.o -o Stack 
+/usr/bin/c++ -g CMakeFiles/Stack.dir/main.cpp.o CMakeFiles/Stack.dir/stack.cpp.o CMakeFiles/Stack.dir/errorlib.cpp.o CMakeFiles/Stack.dir/tests/test.cpp.o CMakeFiles/Stack.dir/tests/errors_pathogens.cpp.o -o Stack 

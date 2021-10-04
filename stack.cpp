@@ -93,6 +93,9 @@ int   Stack_error(const Stack* stack) {
     if (!VALID_PTR(stack->data, stack_el_t)) {
         return errors::ST_DATA_INVALID_PTR;
     }
+    if (!VALID_PTR(stack->info_, StackInfo)) {
+        return errors::ST_INFO_INVALID_PTR;
+    }
     if (stack->size < 0) {
         return errors::INCORRECT_ST_SIZE;
     }
@@ -155,6 +158,8 @@ char* Stack_error_desc(int error_code) {
             return "Stack has invalid pointer";
         case errors::ST_DATA_INVALID_PTR:
             return "Stack.data has invalid pointer";
+        case errors::ST_INFO_INVALID_PTR:
+            return "Stack.info_ has invalid pointer";
         case errors::ST_EMPTY:
             return "Stack is empty";
         case errors::INCORRECT_ST_SIZE:
@@ -275,7 +280,7 @@ int  pop(Stack* stack, int* error) {
                    stack->size, stack->capacity, stack->capacity, stack->capacity / 2);
         }
         change_capacity(stack, stack->capacity / 2, error);
-    } else if (stack->size == 0) {
+    } else if (stack->size == 0 && stack->capacity > CAP_STEP) {
         if (VALIDATE_LEVEL >= WEAK_VALIDATE) {
             printf("stack->size(%d), stack->capacity(%d): Capacity decrease from %d to %d\n",
                    stack->size, stack->capacity, stack->capacity, CAP_STEP);

@@ -97,6 +97,12 @@
 		<Unit filename="/home/ivanbrekman/CLionProjects/Stack/stack.h">
 			<Option target="Stack"/>
 		</Unit>
+		<Unit filename="/home/ivanbrekman/CLionProjects/Stack/tests/errors_pathogens.cpp">
+			<Option target="Stack"/>
+		</Unit>
+		<Unit filename="/home/ivanbrekman/CLionProjects/Stack/tests/errors_pathogens.h">
+			<Option target="Stack"/>
+		</Unit>
 		<Unit filename="/home/ivanbrekman/CLionProjects/Stack/tests/test.cpp">
 			<Option target="Stack"/>
 		</Unit>
