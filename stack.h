@@ -5,6 +5,8 @@
 #ifndef STACK_STACK_H
 #define STACK_STACK_H
 
+#include "config.h"
+
 #include <malloc.h>
 #include "errorlib.h"
 

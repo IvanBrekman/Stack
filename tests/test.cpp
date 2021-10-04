@@ -2,6 +2,8 @@
 // Created by ivanbrekman on 04.10.2021.
 //
 
+#include "../config.h"
+
 #include "../stack.h"
 #include "test.h"
 

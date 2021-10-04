@@ -2,16 +2,18 @@
 // Created by ivanbrekman on 20.09.2021.
 //
 
+#include "config.h"
+
 #include <cmath>
 #include <cassert>
 #include <malloc.h>
 
-#if !defined(VALIDATE_LEVEL)
-    #define VALIDATE_LEVEL 0
-#endif
-
 #include "stack.h"
 #include "errorlib.h"
+
+#if !defined(VALIDATE_LEVEL)
+    #define VALIDATE_LEVEL NO_VALIDATE
+#endif
 
 //! Stack constructor
 //! \param stack pointer to empty stack
@@ -60,8 +62,6 @@ int Stack_ctor_(Stack* stack, const StackInfo* info, int* error) {
 //! \param error pointer to value, where error will be written (default: NULL)
 //! \return      1, if all is good
 int Stack_dtor_(Stack* stack, int* error) {
-    CHECK_SOFT_ERROR(stack, Stack, error);
-
     if (VALIDATE_LEVEL >= MEDIUM_VALIDATE) {
         for (int i = 0; i < stack->size; i++) {
             stack->data[i] = (stack_el_t)poisons::FREED_ELEMENT;

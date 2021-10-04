@@ -5,20 +5,24 @@ CMakeFiles/Stack.dir/errorlib.cpp.o: \
  ../errorlib.cpp \
  ../errorlib.h
 CMakeFiles/Stack.dir/main.cpp.o: \
+ ../config.h \
  ../errorlib.h \
  ../main.cpp \
  ../stack.h \
  ../tests/errors_pathogens.h \
  ../tests/test.h
 CMakeFiles/Stack.dir/stack.cpp.o: \
+ ../config.h \
  ../errorlib.h \
  ../stack.cpp \
  ../stack.h
 CMakeFiles/Stack.dir/tests/errors_pathogens.cpp.o: \
+ ../config.h \
  ../errorlib.h \
  ../stack.h \
  ../tests/errors_pathogens.cpp
 CMakeFiles/Stack.dir/tests/test.cpp.o: \
+ ../config.h \
  ../errorlib.h \
  ../stack.h \
  ../tests/test.cpp \

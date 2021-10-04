@@ -5,6 +5,8 @@
 #ifndef STACK_TEST_H
 #define STACK_TEST_H
 
+#include "../config.h"
+
 struct Prison {
     char left_executioner[1];
     Stack stack;
