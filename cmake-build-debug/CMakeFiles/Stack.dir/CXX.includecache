@@ -6,9 +6,27 @@
 
 #IncludeRegexTransform: 
 
+/home/ivanbrekman/CLionProjects/Stack/errorlib.cpp
+cerrno
+-
+fcntl.h
+-
+unistd.h
+-
+errorlib.h
+/home/ivanbrekman/CLionProjects/Stack/errorlib.h
+
 /home/ivanbrekman/CLionProjects/Stack/errorlib.h
 time.h
 -
+
+/home/ivanbrekman/CLionProjects/Stack/main.cpp
+cstdio
+-
+stack.h
+/home/ivanbrekman/CLionProjects/Stack/stack.h
+tests/test.h
+/home/ivanbrekman/CLionProjects/Stack/tests/test.h
 
 /home/ivanbrekman/CLionProjects/Stack/stack.cpp
 cmath
@@ -29,4 +47,6 @@ errorlib.h
 /home/ivanbrekman/CLionProjects/Stack/errorlib.h
 errorlib.h
 /home/ivanbrekman/CLionProjects/Stack/errorlib.h
+
+/home/ivanbrekman/CLionProjects/Stack/tests/test.h
 
