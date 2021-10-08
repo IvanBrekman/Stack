@@ -193,7 +193,11 @@ unsigned long long Stack_hash_(const Stack* stack) {
 
     for (int i = 0 ; i < sizeof(*stack); i++) {
         if ((i < (char*)&stack->hash - (char*)stack) || (i >= (char*)&stack->hash - (char*)stack + 3 * sizeof(stack->hash))) {
-            hash += *((char*)stack + i) * (int)pow(2, i % 10);
+            if (VALID_PTR((char*)stack + i, char)) {
+                hash += *((char*)stack + i) * (int)pow(2, i % 10);
+            } else {
+                return -1;
+            }
         }
     }
 
@@ -207,7 +211,11 @@ unsigned long long Stack_hash_ptr_(const void* ptr, size_t size) {
     unsigned long long hash = 0;
 
     for (int i = 0 ; i < size; i++) {
-        hash += *((char*)ptr + i) * (int)pow(2, i % 10);
+        if (VALID_PTR((char*)ptr + i, char)) {
+            hash += *((char*)ptr + i) * (int)pow(2, i % 10);
+        } else {
+            return -1;
+        }
     }
 
     return hash;
@@ -444,14 +452,30 @@ void Stack_dump_(const Stack* stack, const StackInfo* current_info, char reason[
 
         long long* l_canary = (long long*)((char*)stack->data - sizeof(long long));
         long long* r_canary = (long long*)((char*)stack->data + stack->capacity * sizeof(stack_el_t));
-        printf("\t\t Data left_canary  = %llX (%s)\n",   *l_canary, *l_canary == CANARY ? (GREEN "ok" NATURAL) : (RED "BAD" NATURAL));
-        printf("\t\t Data right_canary = %llX (%s)\n\n", *r_canary, *r_canary == CANARY ? (GREEN "ok" NATURAL) : (RED "BAD" NATURAL));
+        if (VALID_PTR(l_canary, long long)) {
+            printf("\t\t Data left_canary  = %llX (%s)\n",   *l_canary, *l_canary == CANARY ? (GREEN "ok" NATURAL) : (RED "BAD" NATURAL));
+        } else {
+            printf("\t\t Data left_canary  = ? " RED "Cant read value (incorrect ptr)\n" NATURAL);
+        }
+        if (VALID_PTR(r_canary, long long)) {
+            printf("\t\t Data right_canary = %llX (%s)\n\n", *r_canary, *r_canary == CANARY ? (GREEN "ok" NATURAL) : (RED "BAD" NATURAL));
+        } else {
+            printf("\t\t Data right_canary = ? " RED "Cant read value (incorrect ptr)\n\n" NATURAL);
+        }
 
         for (int i = 0; i < stack->capacity; i++) {
             printf("\t\t%s", i < stack->size ? (BLUE "*") : " ");
             printf("[%d]", i);
             if (i < stack->size) printf(NATURAL);
-            printf(" = %d", stack->data[i]);
+
+            if (VALID_PTR((char*)(stack->data + i), char)) {
+                printf(" = %d", stack->data[i]);
+            } else {
+                printf(" = ? " RED "Cant read value from %p\n" NATURAL, stack->data + i);
+                printf(RED "\t\t Next values will not be shown\n" NATURAL);
+                break;
+            }
+
             if     (stack->data[i] == poisons::UNINITIALIZED_INT) printf((RED " (uninitialized)" NATURAL));
             else if(stack->data[i] == poisons::FREED_ELEMENT)     printf((RED " (freed)"         NATURAL));
             printf("\n");
@@ -540,11 +564,25 @@ void Stack_dump_file_(const Stack* stack, const StackInfo* current_info, char re
 
         long long* l_canary = (long long*)((char*)stack->data - sizeof(long long));
         long long* r_canary = (long long*)((char*)stack->data + stack->capacity * sizeof(stack_el_t));
-        fprintf(log, "\t\t Data left_canary  = %llX (%s)\n",   *l_canary, *l_canary == CANARY ? "ok" : "BAD");
-        fprintf(log, "\t\t Data right_canary = %llX (%s)\n\n", *r_canary, *r_canary == CANARY ? "ok" : "BAD");
+        if (VALID_PTR(l_canary, long long)) {
+            fprintf(log, "\t\t Data left_canary  = %llX (%s)\n",   *l_canary, *l_canary == CANARY ? "ok" : "BAD");
+        } else {
+            fprintf(log, "\t\t Data left_canary  = ? Cant read value (incorrect ptr)\n");
+        }
+        if (VALID_PTR(r_canary, long long)) {
+            fprintf(log, "\t\t Data right_canary = %llX (%s)\n\n", *r_canary, *r_canary == CANARY ? "ok" : "BAD");
+        } else {
+            fprintf(log, "\t\t Data right_canary = ? Cant read value (incorrect ptr)\n\n");
+        }
 
         for (int i = 0; i < stack->capacity; i++) {
-            fprintf(log, "%*s%s[%d] = %d", 8, " ", i < stack->size ? "*" : " ", i, stack->data[i]);
+            if (VALID_PTR((char*)(stack->data + i), char)) {
+                fprintf(log, "\t\t%s[%d] = %d", i < stack->size ? "*" : " ", i, stack->data[i]);
+            } else {
+                fprintf(log, "\t\t%s[%d] = ? Cant read value from %p\n", i < stack->size ? "*" : " ", i, stack->data + i);
+                fprintf(log, "\t\t Next values will not be shown\n");
+                break;
+            }
             if     (stack->data[i] == poisons::UNINITIALIZED_INT) fprintf(log, " (uninitialized)");
             else if(stack->data[i] == poisons::FREED_ELEMENT)     fprintf(log, " (freed)");
             fprintf(log, "\n");

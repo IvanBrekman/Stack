@@ -58,8 +58,6 @@ typedef int stack_el_t;
     Stack_dump_(&(st), info, reason);                                \
 }
 
-#include "errorlib.h"
-
 enum errors {
     NOT_ENOUGH_MEMORY         =  -1,
 

@@ -5,6 +5,6 @@
 #ifndef STACK_CONFIG_H
 #define STACK_CONFIG_H
 
-#define VALIDATE_LEVEL 3
+#define VALIDATE_LEVEL 4
 
 #endif //STACK_CONFIG_H

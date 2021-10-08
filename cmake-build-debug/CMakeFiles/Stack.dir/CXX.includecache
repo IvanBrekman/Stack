@@ -21,22 +21,6 @@ stack.h
 /home/ivanbrekman/CLionProjects/Stack/stack.h
 tests/test.h
 /home/ivanbrekman/CLionProjects/Stack/tests/test.h
-tests/errors_pathogens.h
-/home/ivanbrekman/CLionProjects/Stack/tests/errors_pathogens.h
-
-/home/ivanbrekman/CLionProjects/Stack/stack.cpp
-config.h
-/home/ivanbrekman/CLionProjects/Stack/config.h
-cmath
--
-cassert
--
-malloc.h
--
-stack.h
-/home/ivanbrekman/CLionProjects/Stack/stack.h
-errorlib.h
-/home/ivanbrekman/CLionProjects/Stack/errorlib.h
 
 /home/ivanbrekman/CLionProjects/Stack/stack.h
 config.h
@@ -45,24 +29,6 @@ malloc.h
 -
 errorlib.h
 /home/ivanbrekman/CLionProjects/Stack/errorlib.h
-errorlib.h
-/home/ivanbrekman/CLionProjects/Stack/errorlib.h
-
-/home/ivanbrekman/CLionProjects/Stack/tests/errors_pathogens.cpp
-../config.h
-/home/ivanbrekman/CLionProjects/Stack/config.h
-../stack.h
-/home/ivanbrekman/CLionProjects/Stack/stack.h
-
-/home/ivanbrekman/CLionProjects/Stack/tests/errors_pathogens.h
-
-/home/ivanbrekman/CLionProjects/Stack/tests/test.cpp
-../config.h
-/home/ivanbrekman/CLionProjects/Stack/config.h
-../stack.h
-/home/ivanbrekman/CLionProjects/Stack/stack.h
-test.h
-/home/ivanbrekman/CLionProjects/Stack/tests/test.h
 
 /home/ivanbrekman/CLionProjects/Stack/tests/test.h
 ../config.h
