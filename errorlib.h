@@ -53,7 +53,7 @@ enum poisons {
     FREED_PTR         = 12
 };
 
-#include <time.h>
+#include <ctime>
 
 #define PRINT_DATE(color) {                                         \
     char* date = (char*)calloc(40, sizeof(char));                   \

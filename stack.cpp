@@ -403,9 +403,14 @@ void Stack_dump_(const Stack* stack, const StackInfo* current_info, char reason[
            );
 
     if (VALID_PTR(stack->info_, StackInfo)) {
-        printf("\tStack definition: \"" ORANGE_UNL "%s" NATURAL "\" from %s:%d, " CYAN "%s" NATURAL " function\n",
-               stack->info_->name, stack->info_->file,
-               stack->info_->line, stack->info_->func);
+        if (VALID_PTR(stack->info_->name, char) && VALID_PTR(stack->info_->file, char) &&
+            VALID_PTR(stack->info_->func, char)) {
+            printf("\tStack definition: \"" ORANGE_UNL "%s" NATURAL "\" from %s:%d, " CYAN "%s" NATURAL " function\n",
+                   stack->info_->name, stack->info_->file,
+                   stack->info_->line, stack->info_->func);
+        } else {
+            printf("\tStack definition: " RED "cant access stack.info_ data\n" NATURAL);
+        }
     } else {
         printf("\tStack definition: " RED "Invalid stack.info_ ptr\n" NATURAL);
     }
@@ -516,10 +521,15 @@ void Stack_dump_file_(const Stack* stack, const StackInfo* current_info, char re
            );
 
     if (VALID_PTR(stack->info_, StackInfo)) {
-        fprintf(log, "\tStack definition: \"%s\" from %s:%d, %s function\n{\n",
-                stack->info_->name, stack->info_->file,
-                stack->info_->line, stack->info_->func
-                );
+        if (VALID_PTR(stack->info_->name, char) && VALID_PTR(stack->info_->file, char) &&
+            VALID_PTR(stack->info_->func, char)) {
+            fprintf(log, "\tStack definition: \"%s\" from %s:%d, %s function\n{\n",
+                    stack->info_->name, stack->info_->file,
+                    stack->info_->line, stack->info_->func
+                    );
+        } else {
+            fprintf(log, "\tStack definition: cant access stack.info_ data\n{\n");
+        }
     } else {
         fprintf(log, "\tStack definition: Invalid stack.info_ ptr\n");
     }

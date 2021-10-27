@@ -9,7 +9,7 @@ CMakeFiles/Stack.dir/main.cpp.o: \
  ../errorlib.h \
  ../main.cpp \
  ../stack.h \
- ../tests/test.h
+ ../tests/errors_pathogens.h
 CMakeFiles/Stack.dir/stack.cpp.o: \
  ../config.h \
  ../errorlib.h \
